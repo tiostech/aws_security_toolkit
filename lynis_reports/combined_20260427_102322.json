@@ -1,0 +1,302 @@
+[
+  {
+    "instance": {
+      "id": "i-0c3c72d41912f01f8",
+      "name": "deploybot-builder.vpcint.tioscapital.com",
+      "ip": "10.1.157.226",
+      "type": "c5.xlarge",
+      "az": "us-east-1b"
+    },
+    "parsed": {
+      "hardening_index": "55",
+      "lynis_version": "2.6.2",
+      "os": "Linux",
+      "kernel": "#32~20.04.1-Ubuntu SMP Thu Jun 9 13:03:13 UTC 2022",
+      "warnings": [
+        {
+          "id": "LYNIS",
+          "desc": "Version of Lynis is very old and should be updated",
+          "fix": "-"
+        },
+        {
+          "id": "AUTH-9308",
+          "desc": "No password set for single mode",
+          "fix": "-"
+        },
+        {
+          "id": "PKGS-7392",
+          "desc": "Found one or more vulnerable packages.",
+          "fix": "-"
+        },
+        {
+          "id": "NETW-2705",
+          "desc": "Couldn't find 2 responsive nameservers",
+          "fix": "-"
+        },
+        {
+          "id": "MAIL-8818",
+          "desc": "Found some information disclosure in SMTP banner (OS or software name)",
+          "fix": "-"
+        },
+        {
+          "id": "FIRE-4512",
+          "desc": "iptables module(s) loaded, but no rules active",
+          "fix": "-"
+        }
+      ],
+      "suggestions": [
+        {
+          "id": "CUST-0280",
+          "desc": "Install libpam-tmpdir to set $TMP and $TMPDIR for PAM sessions",
+          "fix": "-"
+        },
+        {
+          "id": "CUST-0285",
+          "desc": "Install libpam-usb to enable multi-factor authentication for PAM sessions",
+          "fix": "-"
+        },
+        {
+          "id": "CUST-0810",
+          "desc": "Install apt-listbugs to display a list of critical bugs prior to each APT installation.",
+          "fix": "-"
+        },
+        {
+          "id": "CUST-0811",
+          "desc": "Install apt-listchanges to display any significant changes prior to any upgrade via APT.",
+          "fix": "-"
+        },
+        {
+          "id": "CUST-0830",
+          "desc": "Install debian-goodies so that you can run checkrestart after upgrades to determine which services are using old versions of libraries and need restarting.",
+          "fix": "-"
+        },
+        {
+          "id": "CUST-0831",
+          "desc": "Install needrestart, alternatively to debian-goodies, so that you can run needrestart after upgrades to determine which daemons are using old versions of libraries and need restarting.",
+          "fix": "-"
+        },
+        {
+          "id": "CUST-0870",
+          "desc": "Install debsecan to generate lists of vulnerabilities which affect this installation.",
+          "fix": "-"
+        },
+        {
+          "id": "CUST-0875",
+          "desc": "Install debsums for the verification of installed package files against MD5 checksums.",
+          "fix": "-"
+        },
+        {
+          "id": "DEB-0880",
+          "desc": "Install fail2ban to automatically ban hosts that commit multiple authentication errors.",
+          "fix": "-"
+        },
+        {
+          "id": "BOOT-5122",
+          "desc": "Set a password on GRUB bootloader to prevent altering boot configuration (e.g. boot in single user mode without password)",
+          "fix": "-"
+        },
+        {
+          "id": "BOOT-5260",
+          "desc": "Protect rescue.service by using sulogin",
+          "fix": "-"
+        },
+        {
+          "id": "KRNL-5788",
+          "desc": "Determine why /vmlinuz is missing on this Debian/Ubuntu system.",
+          "fix": "/vmlinuz"
+        },
+        {
+          "id": "KRNL-5788",
+          "desc": "Check the output of apt-cache policy manually to determine why output is empty",
+          "fix": "-"
+        },
+        {
+          "id": "AUTH-9262",
+          "desc": "Install a PAM module for password strength testing like pam_cracklib or pam_passwdqc",
+          "fix": "-"
+        },
+        {
+          "id": "AUTH-9286",
+          "desc": "Configure minimum password age in /etc/login.defs",
+          "fix": "-"
+        },
+        {
+          "id": "AUTH-9286",
+          "desc": "Configure maximum password age in /etc/login.defs",
+          "fix": "-"
+        },
+        {
+          "id": "AUTH-9308",
+          "desc": "Set password for single user mode to minimize physical access attack surface",
+          "fix": "-"
+        },
+        {
+          "id": "AUTH-9328",
+          "desc": "Default umask in /etc/login.defs could be more strict like 027",
+          "fix": "-"
+        },
+        {
+          "id": "FILE-6310",
+          "desc": "To decrease the impact of a full /home file system, place /home on a separated partition",
+          "fix": "-"
+        },
+        {
+          "id": "FILE-6310",
+          "desc": "To decrease the impact of a full /tmp file system, place /tmp on a separated partition",
+          "fix": "-"
+        },
+        {
+          "id": "FILE-6310",
+          "desc": "To decrease the impact of a full /var file system, place /var on a separated partition",
+          "fix": "-"
+        },
+        {
+          "id": "STRG-1840",
+          "desc": "Disable drivers like USB storage when not used, to prevent unauthorized storage or data theft",
+          "fix": "-"
+        },
+        {
+          "id": "NAME-4404",
+          "desc": "Add the IP name and FQDN to /etc/hosts for proper name resolving",
+          "fix": "-"
+        },
+        {
+          "id": "PKGS-7346",
+          "desc": "Purge old/removed packages (2 found) with aptitude purge or dpkg --purge command. This will cleanup old configuration files, cron jobs and startup scripts.",
+          "fix": "-"
+        },
+        {
+          "id": "PKGS-7370",
+          "desc": "Install debsums utility for the verification of packages with known good database.",
+          "fix": "-"
+        },
+        {
+          "id": "PKGS-7392",
+          "desc": "Update your system with apt-get update, apt-get upgrade, apt-get dist-upgrade and/or unattended-upgrades",
+          "fix": "-"
+        },
+        {
+          "id": "PKGS-7394",
+          "desc": "Install package apt-show-versions for patch management purposes",
+          "fix": "-"
+        },
+        {
+          "id": "NETW-2705",
+          "desc": "Check your resolv.conf file and fill in a backup nameserver if possible",
+          "fix": "-"
+        },
+        {
+          "id": "NETW-3032",
+          "desc": "Consider running ARP monitoring software (arpwatch,arpon)",
+          "fix": "-"
+        },
+        {
+          "id": "MAIL-8818",
+          "desc": "You are advised to hide the mail_name (option: smtpd_banner) from your postfix configuration. Use postconf -e or change your main.cf file (/etc/postfix/main.cf)",
+          "fix": "-"
+        },
+        {
+          "id": "MAIL-8820:disable_vrfy_command",
+          "desc": "Disable the 'VRFY' command",
+          "fix": "disable_vrfy_command=no"
+        },
+        {
+          "id": "SSH-7408",
+          "desc": "Consider hardening SSH configuration",
+          "fix": "AllowTcpForwarding (YES --> NO)"
+        },
+        {
+          "id": "SSH-7408",
+          "desc": "Consider hardening SSH configuration",
+          "fix": "Compression (YES --> (DELAYED"
+        },
+        {
+          "id": "SSH-7408",
+          "desc": "Consider hardening SSH configuration",
+          "fix": "LogLevel (INFO --> VERBOSE)"
+        },
+        {
+          "id": "SSH-7408",
+          "desc": "Consider hardening SSH configuration",
+          "fix": "MaxAuthTries (4 --> 2)"
+        },
+        {
+          "id": "SSH-7408",
+          "desc": "Consider hardening SSH configuration",
+          "fix": "MaxSessions (10 --> 2)"
+        },
+        {
+          "id": "SSH-7408",
+          "desc": "Consider hardening SSH configuration",
+          "fix": "PermitRootLogin (WITHOUT-PASSWORD --> NO)"
+        },
+        {
+          "id": "SSH-7408",
+          "desc": "Consider hardening SSH configuration",
+          "fix": "Port (22 --> )"
+        },
+        {
+          "id": "SSH-7408",
+          "desc": "Consider hardening SSH configuration",
+          "fix": "TCPKeepAlive (YES --> NO)"
+        },
+        {
+          "id": "SSH-7408",
+          "desc": "Consider hardening SSH configuration",
+          "fix": "AllowAgentForwarding (YES --> NO)"
+        },
+        {
+          "id": "LOGG-2190",
+          "desc": "Check what deleted files are still in use and why.",
+          "fix": "-"
+        },
+        {
+          "id": "BANN-7126",
+          "desc": "Add a legal banner to /etc/issue, to warn unauthorized users",
+          "fix": "-"
+        },
+        {
+          "id": "BANN-7130",
+          "desc": "Add legal banner to /etc/issue.net, to warn unauthorized users",
+          "fix": "-"
+        },
+        {
+          "id": "ACCT-9622",
+          "desc": "Enable process accounting",
+          "fix": "-"
+        },
+        {
+          "id": "ACCT-9626",
+          "desc": "Enable sysstat to collect accounting (no results)",
+          "fix": "-"
+        },
+        {
+          "id": "ACCT-9628",
+          "desc": "Enable auditd to collect audit information",
+          "fix": "-"
+        },
+        {
+          "id": "FINT-4350",
+          "desc": "Install a file integrity tool to monitor changes to critical and sensitive files",
+          "fix": "-"
+        },
+        {
+          "id": "KRNL-6000",
+          "desc": "One or more sysctl values differ from the scan profile and could be tweaked",
+          "fix": ""
+        },
+        {
+          "id": "HRDN-7222",
+          "desc": "Harden compilers like restricting access to root user only",
+          "fix": "-"
+        },
+        {
+          "id": "HRDN-7230",
+          "desc": "Harden the system by installing at least one malware scanner, to perform periodic file system scans",
+          "fix": "-"
+        }
+      ],
+      "tests_performed": "HRDN-7230|HRDN-7222|HRDN-7220|KRNL-6000|HOME-9350|HOME-9310|HOME-9302|FILE-7524|MALW-3284|MALW-3282|MALW-3280|MALW-3278|MALW-3276|MALW-3275|TOOL-5190|TOOL-5122|TOOL-5120|TOOL-5102|TOOL-5002|FINT-4350|FINT-4338|FINT-4330|FINT-4328|FINT-4326|FINT-4322|FINT-4318|FINT-4314|FINT-4310|MACF-6290|RBAC-6272|MACF-6232|MACF-6208|MACF-6204|CONT-8102|CRYP-7902|TIME-3170|TIME-3148|TIME-3106|TIME-3104|ACCT-9636|ACCT-9628|ACCT-9626|ACCT-9622|SCHD-7724|SCHD-7720|SCHD-7718|SCHD-7704|SCHD-7702|BANN-7130|BANN-7128|BANN-7126|BANN-7124|INSE-8002|LOGG-2192|LOGG-2190|LOGG-2180|LOGG-2170|LOGG-2154|LOGG-2150|LOGG-2148|LOGG-2146|LOGG-2142|LOGG-2138|LOGG-2240|LOGG-2230|LOGG-2210|LOGG-2136|LOGG-2132|LOGG-2130|SQD-3602|PHP-2211|LDAP-2219|DBS-1880|DBS-1860|DBS-1840|DBS-1826|DBS-1820|DBS-1818|DBS-1804|SNMP-3302|SSH-7440|SSH-7408|SSH-7404|SSH-7402|HTTP-6702|HTTP-6622|FIRE-4594|FIRE-4590|FIRE-4586|FIRE-4524|FIRE-4513|FIRE-4512|FIRE-4508|FIRE-4502|MAIL-8880|MAIL-8860|MAIL-8838|MAIL-8820|MAIL-8818|MAIL-8817|MAIL-8816|MAIL-8814|MAIL-8802|PRNT-2314|PRNT-2304|NETW-3032|NETW-3030|NETW-3028|NETW-3015|NETW-3012|NETW-3008|NETW-3006|NETW-3004|NETW-3001|NETW-2705|NETW-2704|NETW-2600|PKGS-7410|PKGS-7398|PKGS-7394|PKGS-7392|PKGS-7390|PKGS-7388|PKGS-7370|PKGS-7346|PKGS-7345|NAME-4408|NAME-4406|NAME-4404|NAME-4402|NAME-4304|NAME-4230|NAME-4202|NAME-4034|NAME-4032|NAME-4028|NAME-4020|NAME-4018|NAME-4016|STRG-1920|STRG-1846|USB-3000|STRG-1842|STRG-1840|FILE-6430|FILE-6376|FILE-6374|FILE-6372|FILE-6368|FILE-6363|FILE-6362|FILE-6354|FILE-6344|FILE-6336|FILE-6332|FILE-6329|FILE-6323|FILE-6311|FILE-6310|SHLL-6230|SHLL-6220|SHLL-6211|AUTH-9408|AUTH-9402|AUTH-9328|AUTH-9308|AUTH-9288|AUTH-9286|AUTH-9283|AUTH-9282|AUTH-9278|AUTH-9268|AUTH-9266|AUTH-9264|AUTH-9262|AUTH-9252|AUTH-9250|AUTH-9242|AUTH-9240|AUTH-9234|AUTH-9228|AUTH-9226|AUTH-9222|AUTH-9216|AUTH-9208|AUTH-9204|PROC-3614|PROC-3612|PROC-3602|KRNL-5830|KRNL-5820|KRNL-5788|KRNL-5730|KRNL-5728|KRNL-5726|KRNL-5723|KRNL-5695|KRNL-5677|KRNL-5622|BOOT-5260|BOOT-5202|BOOT-5184|BOOT-5180|BOOT-5177|BOOT-5155|BOOT-5142|BOOT-5139|BOOT-5122|BOOT-5121|BOOT-5116|BOOT-5108|BOOT-5104|DEB-0880|CUST-0875|CUST-0870|CUST-0831|CUST-0830|CUST-0811|CUST-0810|CUST-0510|CUST-0285|CUST-0280|CUST-0001|CORE-1000|"
+    }
+  }
+]

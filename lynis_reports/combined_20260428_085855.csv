@@ -1,0 +1,49 @@
+Instance ID,Instance Name,IP,Hardening Score,OS,Kernel,Lynis Version,Type,ID,Description,Fix
+unknown,10.1.157.226,10.1.157.226,65,Linux,#32~20.04.1-Ubuntu SMP Thu Jun 9 13:03:13 UTC 2022,3.1.4,WARNING,GEN-0020,Your profile contains one or more old-style configuration entries,-
+unknown,10.1.157.226,10.1.157.226,65,Linux,#32~20.04.1-Ubuntu SMP Thu Jun 9 13:03:13 UTC 2022,3.1.4,WARNING,GEN-0010,This version 20.04 is marked end-of-life as of 2025-04-01,-
+unknown,10.1.157.226,10.1.157.226,65,Linux,#32~20.04.1-Ubuntu SMP Thu Jun 9 13:03:13 UTC 2022,3.1.4,WARNING,PKGS-7392,Found one or more vulnerable packages.,-
+unknown,10.1.157.226,10.1.157.226,65,Linux,#32~20.04.1-Ubuntu SMP Thu Jun 9 13:03:13 UTC 2022,3.1.4,WARNING,MAIL-8818,Found some information disclosure in SMTP banner (OS or software name),-
+unknown,10.1.157.226,10.1.157.226,65,Linux,#32~20.04.1-Ubuntu SMP Thu Jun 9 13:03:13 UTC 2022,3.1.4,WARNING,FIRE-4512,"iptables module(s) loaded, but no rules active",-
+unknown,10.1.157.226,10.1.157.226,65,Linux,#32~20.04.1-Ubuntu SMP Thu Jun 9 13:03:13 UTC 2022,3.1.4,SUGGESTION,LYNIS,"Version of Lynis outdated, consider upgrading to the latest version",-
+unknown,10.1.157.226,10.1.157.226,65,Linux,#32~20.04.1-Ubuntu SMP Thu Jun 9 13:03:13 UTC 2022,3.1.4,SUGGESTION,BOOT-5122,Set a password on GRUB boot loader to prevent altering boot configuration (e.g. boot in single user mode without password),-
+unknown,10.1.157.226,10.1.157.226,65,Linux,#32~20.04.1-Ubuntu SMP Thu Jun 9 13:03:13 UTC 2022,3.1.4,SUGGESTION,BOOT-5264,Consider hardening system services,Run '/usr/bin/systemd-analyze security SERVICE' for each service
+unknown,10.1.157.226,10.1.157.226,65,Linux,#32~20.04.1-Ubuntu SMP Thu Jun 9 13:03:13 UTC 2022,3.1.4,SUGGESTION,KRNL-5820,"If not required, consider explicit disabling of core dump in /etc/security/limits.conf file",-
+unknown,10.1.157.226,10.1.157.226,65,Linux,#32~20.04.1-Ubuntu SMP Thu Jun 9 13:03:13 UTC 2022,3.1.4,SUGGESTION,AUTH-9230,Configure password hashing rounds in /etc/login.defs,-
+unknown,10.1.157.226,10.1.157.226,65,Linux,#32~20.04.1-Ubuntu SMP Thu Jun 9 13:03:13 UTC 2022,3.1.4,SUGGESTION,AUTH-9262,Install a PAM module for password strength testing like pam_cracklib or pam_passwdqc or libpam-passwdqc,-
+unknown,10.1.157.226,10.1.157.226,65,Linux,#32~20.04.1-Ubuntu SMP Thu Jun 9 13:03:13 UTC 2022,3.1.4,SUGGESTION,AUTH-9284,Look at the locked accounts and consider removing them,-
+unknown,10.1.157.226,10.1.157.226,65,Linux,#32~20.04.1-Ubuntu SMP Thu Jun 9 13:03:13 UTC 2022,3.1.4,SUGGESTION,AUTH-9286,Configure minimum password age in /etc/login.defs,-
+unknown,10.1.157.226,10.1.157.226,65,Linux,#32~20.04.1-Ubuntu SMP Thu Jun 9 13:03:13 UTC 2022,3.1.4,SUGGESTION,AUTH-9286,Configure maximum password age in /etc/login.defs,-
+unknown,10.1.157.226,10.1.157.226,65,Linux,#32~20.04.1-Ubuntu SMP Thu Jun 9 13:03:13 UTC 2022,3.1.4,SUGGESTION,AUTH-9328,Default umask in /etc/login.defs could be more strict like 027,-
+unknown,10.1.157.226,10.1.157.226,65,Linux,#32~20.04.1-Ubuntu SMP Thu Jun 9 13:03:13 UTC 2022,3.1.4,SUGGESTION,FILE-6310,"To decrease the impact of a full /home file system, place /home on a separate partition",-
+unknown,10.1.157.226,10.1.157.226,65,Linux,#32~20.04.1-Ubuntu SMP Thu Jun 9 13:03:13 UTC 2022,3.1.4,SUGGESTION,FILE-6310,"To decrease the impact of a full /tmp file system, place /tmp on a separate partition",-
+unknown,10.1.157.226,10.1.157.226,65,Linux,#32~20.04.1-Ubuntu SMP Thu Jun 9 13:03:13 UTC 2022,3.1.4,SUGGESTION,FILE-6310,"To decrease the impact of a full /var file system, place /var on a separate partition",-
+unknown,10.1.157.226,10.1.157.226,65,Linux,#32~20.04.1-Ubuntu SMP Thu Jun 9 13:03:13 UTC 2022,3.1.4,SUGGESTION,USB-1000,"Disable drivers like USB storage when not used, to prevent unauthorized storage or data theft",-
+unknown,10.1.157.226,10.1.157.226,65,Linux,#32~20.04.1-Ubuntu SMP Thu Jun 9 13:03:13 UTC 2022,3.1.4,SUGGESTION,NAME-4404,Add the IP name and FQDN to /etc/hosts for proper name resolving,-
+unknown,10.1.157.226,10.1.157.226,65,Linux,#32~20.04.1-Ubuntu SMP Thu Jun 9 13:03:13 UTC 2022,3.1.4,SUGGESTION,PKGS-7346,"Purge old/removed packages (2 found) with aptitude purge or dpkg --purge command. This will cleanup old configuration files, cron jobs and startup scripts.",-
+unknown,10.1.157.226,10.1.157.226,65,Linux,#32~20.04.1-Ubuntu SMP Thu Jun 9 13:03:13 UTC 2022,3.1.4,SUGGESTION,PKGS-7370,Install debsums utility for the verification of packages with known good database.,-
+unknown,10.1.157.226,10.1.157.226,65,Linux,#32~20.04.1-Ubuntu SMP Thu Jun 9 13:03:13 UTC 2022,3.1.4,SUGGESTION,PKGS-7392,"Update your system with apt-get update, apt-get upgrade, apt-get dist-upgrade and/or unattended-upgrades",-
+unknown,10.1.157.226,10.1.157.226,65,Linux,#32~20.04.1-Ubuntu SMP Thu Jun 9 13:03:13 UTC 2022,3.1.4,SUGGESTION,PKGS-7394,Install package apt-show-versions for patch management purposes,-
+unknown,10.1.157.226,10.1.157.226,65,Linux,#32~20.04.1-Ubuntu SMP Thu Jun 9 13:03:13 UTC 2022,3.1.4,SUGGESTION,NETW-3200,Determine if protocol 'dccp' is really needed on this system,-
+unknown,10.1.157.226,10.1.157.226,65,Linux,#32~20.04.1-Ubuntu SMP Thu Jun 9 13:03:13 UTC 2022,3.1.4,SUGGESTION,NETW-3200,Determine if protocol 'sctp' is really needed on this system,-
+unknown,10.1.157.226,10.1.157.226,65,Linux,#32~20.04.1-Ubuntu SMP Thu Jun 9 13:03:13 UTC 2022,3.1.4,SUGGESTION,NETW-3200,Determine if protocol 'rds' is really needed on this system,-
+unknown,10.1.157.226,10.1.157.226,65,Linux,#32~20.04.1-Ubuntu SMP Thu Jun 9 13:03:13 UTC 2022,3.1.4,SUGGESTION,NETW-3200,Determine if protocol 'tipc' is really needed on this system,-
+unknown,10.1.157.226,10.1.157.226,65,Linux,#32~20.04.1-Ubuntu SMP Thu Jun 9 13:03:13 UTC 2022,3.1.4,SUGGESTION,MAIL-8818,You are advised to hide the mail_name (option: smtpd_banner) from your postfix configuration. Use postconf -e or change your main.cf file (/etc/postfix/main.cf),-
+unknown,10.1.157.226,10.1.157.226,65,Linux,#32~20.04.1-Ubuntu SMP Thu Jun 9 13:03:13 UTC 2022,3.1.4,SUGGESTION,MAIL-8820:disable_vrfy_command,Disable the 'VRFY' command,disable_vrfy_command=no
+unknown,10.1.157.226,10.1.157.226,65,Linux,#32~20.04.1-Ubuntu SMP Thu Jun 9 13:03:13 UTC 2022,3.1.4,SUGGESTION,SSH-7408,Consider hardening SSH configuration,AllowTcpForwarding (set YES to NO)
+unknown,10.1.157.226,10.1.157.226,65,Linux,#32~20.04.1-Ubuntu SMP Thu Jun 9 13:03:13 UTC 2022,3.1.4,SUGGESTION,SSH-7408,Consider hardening SSH configuration,LogLevel (set INFO to VERBOSE)
+unknown,10.1.157.226,10.1.157.226,65,Linux,#32~20.04.1-Ubuntu SMP Thu Jun 9 13:03:13 UTC 2022,3.1.4,SUGGESTION,SSH-7408,Consider hardening SSH configuration,MaxAuthTries (set 4 to 3)
+unknown,10.1.157.226,10.1.157.226,65,Linux,#32~20.04.1-Ubuntu SMP Thu Jun 9 13:03:13 UTC 2022,3.1.4,SUGGESTION,SSH-7408,Consider hardening SSH configuration,MaxSessions (set 10 to 2)
+unknown,10.1.157.226,10.1.157.226,65,Linux,#32~20.04.1-Ubuntu SMP Thu Jun 9 13:03:13 UTC 2022,3.1.4,SUGGESTION,SSH-7408,Consider hardening SSH configuration,Port (set 22 to )
+unknown,10.1.157.226,10.1.157.226,65,Linux,#32~20.04.1-Ubuntu SMP Thu Jun 9 13:03:13 UTC 2022,3.1.4,SUGGESTION,SSH-7408,Consider hardening SSH configuration,TCPKeepAlive (set YES to NO)
+unknown,10.1.157.226,10.1.157.226,65,Linux,#32~20.04.1-Ubuntu SMP Thu Jun 9 13:03:13 UTC 2022,3.1.4,SUGGESTION,SSH-7408,Consider hardening SSH configuration,AllowAgentForwarding (set YES to NO)
+unknown,10.1.157.226,10.1.157.226,65,Linux,#32~20.04.1-Ubuntu SMP Thu Jun 9 13:03:13 UTC 2022,3.1.4,SUGGESTION,LOGG-2154,Enable logging to an external logging host for archiving purposes and additional protection,-
+unknown,10.1.157.226,10.1.157.226,65,Linux,#32~20.04.1-Ubuntu SMP Thu Jun 9 13:03:13 UTC 2022,3.1.4,SUGGESTION,BANN-7126,"Add a legal banner to /etc/issue, to warn unauthorized users",-
+unknown,10.1.157.226,10.1.157.226,65,Linux,#32~20.04.1-Ubuntu SMP Thu Jun 9 13:03:13 UTC 2022,3.1.4,SUGGESTION,BANN-7130,"Add legal banner to /etc/issue.net, to warn unauthorized users",-
+unknown,10.1.157.226,10.1.157.226,65,Linux,#32~20.04.1-Ubuntu SMP Thu Jun 9 13:03:13 UTC 2022,3.1.4,SUGGESTION,ACCT-9622,Enable process accounting,-
+unknown,10.1.157.226,10.1.157.226,65,Linux,#32~20.04.1-Ubuntu SMP Thu Jun 9 13:03:13 UTC 2022,3.1.4,SUGGESTION,ACCT-9626,Enable sysstat to collect accounting (no results),-
+unknown,10.1.157.226,10.1.157.226,65,Linux,#32~20.04.1-Ubuntu SMP Thu Jun 9 13:03:13 UTC 2022,3.1.4,SUGGESTION,ACCT-9628,Enable auditd to collect audit information,-
+unknown,10.1.157.226,10.1.157.226,65,Linux,#32~20.04.1-Ubuntu SMP Thu Jun 9 13:03:13 UTC 2022,3.1.4,SUGGESTION,FINT-4350,Install a file integrity tool to monitor changes to critical and sensitive files,-
+unknown,10.1.157.226,10.1.157.226,65,Linux,#32~20.04.1-Ubuntu SMP Thu Jun 9 13:03:13 UTC 2022,3.1.4,SUGGESTION,HOME-9304,Double check the permissions of home directories as some might be not strict enough.,-
+unknown,10.1.157.226,10.1.157.226,65,Linux,#32~20.04.1-Ubuntu SMP Thu Jun 9 13:03:13 UTC 2022,3.1.4,SUGGESTION,KRNL-6000,One or more sysctl values differ from the scan profile and could be tweaked,
+unknown,10.1.157.226,10.1.157.226,65,Linux,#32~20.04.1-Ubuntu SMP Thu Jun 9 13:03:13 UTC 2022,3.1.4,SUGGESTION,HRDN-7222,Harden compilers like restricting access to root user only,-
+unknown,10.1.157.226,10.1.157.226,65,Linux,#32~20.04.1-Ubuntu SMP Thu Jun 9 13:03:13 UTC 2022,3.1.4,SUGGESTION,HRDN-7230,"Harden the system by installing at least one malware scanner, to perform periodic file system scans",-

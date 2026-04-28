@@ -1,0 +1,40 @@
+{
+  "instance": {
+    "id": "unknown",
+    "name": "10.1.157.226",
+    "ip": "10.1.157.226",
+    "type": "unknown",
+    "az": "unknown"
+  },
+  "report": {
+    "hardening_index": null,
+    "lynis_version": "3.1.4",
+    "os": "Linux",
+    "kernel": null,
+    "warnings": [
+      {
+        "id": "GEN-0020",
+        "desc": "Your profile contains one or more old-style configuration entries",
+        "fix": "-"
+      }
+    ],
+    "suggestions": [
+      {
+        "id": "LYNIS",
+        "desc": "Version of Lynis outdated, consider upgrading to the latest version",
+        "fix": "-"
+      },
+      {
+        "id": "BOOT-5122",
+        "desc": "Set a password on GRUB boot loader to prevent altering boot configuration (e.g. boot in single user mode without password)",
+        "fix": "-"
+      },
+      {
+        "id": "BOOT-5264",
+        "desc": "Consider hardening system services",
+        "fix": "Run '/usr/bin/systemd-analyze security SERVICE' for each service"
+      }
+    ],
+    "tests_performed": null
+  }
+}
