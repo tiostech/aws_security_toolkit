@@ -400,7 +400,7 @@ Generated automatically every run. Opens in any browser:
 ## Script 4 — scan_mcp.sh (MCP Server Security Scanner)
 
 Scans MCP (Model Context Protocol) servers for security threats before you install or use them. Accepts a GitHub URL or local path and runs multiple static and AI-powered analyzers against the source code.
-
+https://blogs.cisco.com/ai/ciscos-mcp-scanner-introduces-behavioral-code-threat-analysis
 ### What it does
 
 1. Clones `cisco-ai-defense/mcp-scanner` into `~/dev/` if not already present
