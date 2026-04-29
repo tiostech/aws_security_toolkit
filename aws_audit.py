@@ -94,12 +94,22 @@ def audit_iam(session):
         time.sleep(0.05)
         name = user["UserName"]
 
-        # MFA check
-        mfa = iam.list_mfa_devices(UserName=name)["MFADevices"]
-        if not mfa:
-            finding("HIGH", "IAM", f"user/{name}",
-                    "IAM user has no MFA device attached",
-                    "Enforce MFA for all human IAM users")
+        # Determine if this is a human user (has console password) or CLI-only user
+        has_console = False
+        try:
+            iam.get_login_profile(UserName=name)
+            has_console = True
+        except ClientError as e:
+            if e.response["Error"]["Code"] != "NoSuchEntity":
+                raise
+
+        # MFA only matters for users with console access
+        if has_console:
+            mfa = iam.list_mfa_devices(UserName=name)["MFADevices"]
+            if not mfa:
+                finding("HIGH", "IAM", f"user/{name}",
+                        "Human IAM user with console access has no MFA device attached",
+                        "Enforce MFA for all users with console access")
 
         # Access key age
         keys = iam.list_access_keys(UserName=name)["AccessKeyMetadata"]
@@ -906,6 +916,314 @@ function filterTable() {{
     print(f"\n{Fore.GREEN}HTML report saved to {output_path}{Style.RESET_ALL}")
 
 
+# ── Amazon MQ ────────────────────────────────────────────────────────────────
+
+def audit_mq(session, region):
+    section("Amazon MQ")
+    mq = session.client("mq", region_name=region)
+    try:
+        brokers = mq.list_brokers()["BrokerSummaries"]
+    except ClientError as e:
+        warn(f"MQ: {e.response['Error']['Code']} — skipping")
+        return
+    if not brokers:
+        print("  No MQ brokers found.")
+        return
+    for b in brokers:
+        time.sleep(0.05)
+        name = b["BrokerName"]
+        try:
+            d = mq.describe_broker(BrokerId=b["BrokerId"])
+        except ClientError:
+            continue
+        if d.get("PubliclyAccessible", False):
+            finding("CRITICAL", "MQ", f"broker/{name}",
+                    "Broker is publicly accessible — message queue reachable from the internet",
+                    "Set PubliclyAccessible=false and place broker in private subnets")
+        if not d.get("AutoMinorVersionUpgrade", False):
+            finding("MEDIUM", "MQ", f"broker/{name}",
+                    "Auto minor version upgrade is disabled — security patches not applied automatically",
+                    "Enable AutoMinorVersionUpgrade on the broker")
+        logs = d.get("Logs", {})
+        if not logs.get("General") and not logs.get("Audit"):
+            finding("MEDIUM", "MQ", f"broker/{name}",
+                    "Broker audit and general logging are both disabled",
+                    "Enable audit and general logging to CloudWatch for visibility")
+    print(f"{Fore.GREEN}MQ audit complete. {len(brokers)} broker(s) checked.{Style.RESET_ALL}")
+
+
+# ── Route 53 ──────────────────────────────────────────────────────────────────
+
+def audit_route53(session):
+    section("Route 53")
+    r53 = session.client("route53")
+    try:
+        zones = r53.list_hosted_zones()["HostedZones"]
+    except ClientError as e:
+        warn(f"Route53: {e.response['Error']['Code']} — skipping")
+        return
+    if not zones:
+        print("  No hosted zones found.")
+        return
+    for zone in zones:
+        zone_id  = zone["Id"].split("/")[-1]
+        name     = zone["Name"]
+        private  = zone["Config"]["PrivateZone"]
+        if private:
+            continue  # Private zones are internal DNS — lower risk
+        # DNSSEC
+        try:
+            status = r53.get_dnssec(HostedZoneId=zone_id)["Status"]["ServeSignature"]
+            if status != "SIGNING":
+                finding("MEDIUM", "Route53", f"zone/{name}",
+                        "DNSSEC is not enabled — DNS responses can be spoofed (cache poisoning)",
+                        "Enable DNSSEC signing on the hosted zone")
+        except ClientError:
+            pass
+        # Query logging
+        try:
+            configs = r53.list_query_logging_configs(HostedZoneId=zone_id)["QueryLoggingConfigs"]
+            if not configs:
+                finding("LOW", "Route53", f"zone/{name}",
+                        "DNS query logging is not enabled — no visibility into DNS lookups",
+                        "Enable query logging to CloudWatch Logs for audit trail")
+        except ClientError:
+            pass
+        # Wildcard records
+        try:
+            paginator = r53.get_paginator("list_resource_record_sets")
+            for page in paginator.paginate(HostedZoneId=zone_id):
+                for rec in page["ResourceRecordSets"]:
+                    if rec["Name"].startswith("*."):
+                        finding("LOW", "Route53", f"zone/{name} record/{rec['Name']}",
+                                f"Wildcard DNS record {rec['Name']} may resolve unintended subdomains",
+                                "Review wildcard records and remove if not specifically required")
+        except ClientError:
+            pass
+    public = [z for z in zones if not z["Config"]["PrivateZone"]]
+    print(f"{Fore.GREEN}Route53 audit complete. {len(public)} public zone(s) checked.{Style.RESET_ALL}")
+
+
+# ── VPC ───────────────────────────────────────────────────────────────────────
+
+def audit_vpc(session, region):
+    section("VPC")
+    ec2 = session.client("ec2", region_name=region)
+
+    # Default VPC + flow logs
+    vpcs = ec2.describe_vpcs()["Vpcs"]
+    for vpc in vpcs:
+        vpc_id = vpc["VpcId"]
+        if vpc.get("IsDefault", False):
+            finding("MEDIUM", "VPC", f"vpc/{vpc_id}",
+                    "Default VPC exists — production resources should never run in the default VPC",
+                    "Delete the default VPC if unused; use custom VPCs with explicit CIDR ranges")
+        flow_logs = ec2.describe_flow_logs(
+            Filters=[{"Name": "resource-id", "Values": [vpc_id]}]
+        )["FlowLogs"]
+        if not flow_logs:
+            finding("MEDIUM", "VPC", f"vpc/{vpc_id}",
+                    "VPC flow logs are not enabled — no network traffic audit trail",
+                    "Enable VPC flow logs to S3 or CloudWatch Logs")
+
+    # Subnets auto-assigning public IPs
+    subnets = ec2.describe_subnets()["Subnets"]
+    for sn in subnets:
+        if sn.get("MapPublicIpOnLaunch", False):
+            finding("LOW", "VPC", f"subnet/{sn['SubnetId']}",
+                    "Subnet auto-assigns public IPs — every instance launched here gets a public IP",
+                    "Disable MapPublicIpOnLaunch unless this is an intentional public subnet")
+
+    # Default security group should have no rules
+    default_sgs = ec2.describe_security_groups(
+        Filters=[{"Name": "group-name", "Values": ["default"]}]
+    )["SecurityGroups"]
+    for sg in default_sgs:
+        if sg.get("IpPermissions") or sg.get("IpPermissionsEgress"):
+            finding("MEDIUM", "VPC", f"vpc/{sg['VpcId']} default-sg/{sg['GroupId']}",
+                    "Default security group has inbound or outbound rules — resources using it are exposed",
+                    "Remove all rules from the default SG; use dedicated custom security groups")
+
+    # NACLs with allow-all rules
+    nacls = ec2.describe_network_acls()["NetworkAcls"]
+    for nacl in nacls:
+        if nacl.get("IsDefault", False):
+            continue
+        for entry in nacl.get("Entries", []):
+            if (entry.get("CidrBlock") == "0.0.0.0/0"
+                    and entry.get("RuleAction") == "allow"
+                    and entry.get("Protocol") == "-1"):
+                finding("MEDIUM", "VPC", f"nacl/{nacl['NetworkAclId']}",
+                        "Network ACL has an allow-all rule for 0.0.0.0/0 — provides no traffic filtering",
+                        "Replace allow-all NACL rules with specific rules for required traffic only")
+                break
+
+    print(f"{Fore.GREEN}VPC audit complete. {len(vpcs)} VPC(s) checked.{Style.RESET_ALL}")
+
+
+# ── CloudFront ────────────────────────────────────────────────────────────────
+
+def audit_cloudfront(session):
+    section("CloudFront")
+    cf = session.client("cloudfront")
+    try:
+        dist_list = cf.list_distributions().get("DistributionList", {})
+        distributions = dist_list.get("Items", [])
+    except ClientError as e:
+        warn(f"CloudFront: {e.response['Error']['Code']} — skipping")
+        return
+    if not distributions:
+        print("  No CloudFront distributions found.")
+        return
+    for dist in distributions:
+        dist_id = dist["Id"]
+        domain  = dist.get("DomainName", dist_id)
+        behavior = dist.get("DefaultCacheBehavior", {})
+
+        # HTTP not forced to HTTPS
+        viewer_proto = behavior.get("ViewerProtocolPolicy", "")
+        if viewer_proto == "allow-all":
+            finding("HIGH", "CloudFront", f"distribution/{dist_id} ({domain})",
+                    "Distribution allows plain HTTP — traffic can be intercepted in cleartext",
+                    "Set ViewerProtocolPolicy to 'redirect-to-https' or 'https-only'")
+
+        # Weak minimum TLS version
+        cert = dist.get("ViewerCertificate", {})
+        min_tls = cert.get("MinimumProtocolVersion", "")
+        if min_tls in ("SSLv3", "TLSv1", "TLSv1_2016", "TLSv1.1_2016"):
+            finding("HIGH", "CloudFront", f"distribution/{dist_id}",
+                    f"Minimum TLS version is {min_tls} — weak protocols accepted by viewers",
+                    "Set MinimumProtocolVersion to TLSv1.2_2021")
+
+        # No WAF
+        if not dist.get("WebACLId"):
+            finding("MEDIUM", "CloudFront", f"distribution/{dist_id} ({domain})",
+                    "No AWS WAF Web ACL is associated — no protection against common web attacks",
+                    "Associate a WAF Web ACL with rate limiting and managed rule groups")
+
+        # Access logging disabled
+        if not dist.get("Logging", {}).get("Enabled", False):
+            finding("LOW", "CloudFront", f"distribution/{dist_id}",
+                    "CloudFront access logging is disabled — no request audit trail",
+                    "Enable access logging to an S3 bucket")
+
+        # Origin using HTTP
+        for origin in dist.get("Origins", {}).get("Items", []):
+            proto = origin.get("CustomOriginConfig", {}).get("OriginProtocolPolicy", "")
+            if proto == "http-only":
+                finding("HIGH", "CloudFront", f"distribution/{dist_id} origin/{origin.get('Id')}",
+                        "Origin connection is HTTP only — traffic between CloudFront and origin is unencrypted",
+                        "Set OriginProtocolPolicy to 'https-only'")
+
+    print(f"{Fore.GREEN}CloudFront audit complete. {len(distributions)} distribution(s) checked.{Style.RESET_ALL}")
+
+
+# ── ACM (Certificate Manager) ─────────────────────────────────────────────────
+
+def audit_acm(session, region):
+    section("Certificate Manager (ACM)")
+    acm = session.client("acm", region_name=region)
+    try:
+        paginator = acm.get_paginator("list_certificates")
+        certs = []
+        for page in paginator.paginate():
+            certs.extend(page["CertificateSummaryList"])
+    except ClientError as e:
+        warn(f"ACM: {e.response['Error']['Code']} — skipping")
+        return
+    if not certs:
+        print("  No ACM certificates found.")
+        return
+    for summary in certs:
+        arn    = summary["CertificateArn"]
+        domain = summary.get("DomainName", arn)
+        time.sleep(0.05)
+        try:
+            cert = acm.describe_certificate(CertificateArn=arn)["Certificate"]
+        except ClientError:
+            continue
+        status = cert.get("Status", "")
+        if status == "EXPIRED":
+            finding("CRITICAL", "ACM", f"certificate/{domain}",
+                    "Certificate is EXPIRED — services using it will show SSL errors to users",
+                    "Renew or replace the certificate immediately")
+        elif status == "FAILED":
+            finding("HIGH", "ACM", f"certificate/{domain}",
+                    "Certificate issuance FAILED — the certificate is not active",
+                    "Check the certificate and re-request if needed")
+        elif status == "PENDING_VALIDATION":
+            finding("MEDIUM", "ACM", f"certificate/{domain}",
+                    "Certificate is pending validation — not yet in use",
+                    "Complete DNS or email validation to activate the certificate")
+        elif status == "ISSUED":
+            not_after = cert.get("NotAfter")
+            if not_after:
+                days_left = (not_after.replace(tzinfo=timezone.utc) - datetime.now(timezone.utc)).days
+                if days_left < 0:
+                    finding("CRITICAL", "ACM", f"certificate/{domain}",
+                            f"Certificate expired {abs(days_left)} days ago",
+                            "Renew immediately — services using this cert are broken")
+                elif days_left < 30:
+                    finding("HIGH", "ACM", f"certificate/{domain}",
+                            f"Certificate expires in {days_left} days",
+                            "Renew now to avoid service disruption")
+            if not cert.get("InUseBy"):
+                finding("LOW", "ACM", f"certificate/{domain}",
+                        "Certificate is issued but not attached to any AWS resource",
+                        "Attach to a load balancer or CloudFront distribution, or delete if unused")
+    print(f"{Fore.GREEN}ACM audit complete. {len(certs)} certificate(s) checked.{Style.RESET_ALL}")
+
+
+# ── Secrets Manager ───────────────────────────────────────────────────────────
+
+def audit_secrets_manager(session, region):
+    section("Secrets Manager")
+    sm = session.client("secretsmanager", region_name=region)
+    try:
+        paginator = sm.get_paginator("list_secrets")
+        secrets = []
+        for page in paginator.paginate():
+            secrets.extend(page["SecretList"])
+    except ClientError as e:
+        warn(f"Secrets Manager: {e.response['Error']['Code']} — skipping")
+        return
+    if not secrets:
+        print("  No secrets found.")
+        return
+    for secret in secrets:
+        name = secret.get("Name", secret.get("ARN", "unknown"))
+        time.sleep(0.05)
+        # Rotation not enabled
+        if not secret.get("RotationEnabled", False):
+            finding("MEDIUM", "SecretsManager", f"secret/{name}",
+                    "Automatic rotation is not enabled — credentials are never auto-rotated",
+                    "Enable automatic rotation with a Lambda rotation function")
+        else:
+            last_rotated  = secret.get("LastRotatedDate")
+            rotation_days = secret.get("RotationRules", {}).get("AutomaticallyAfterDays", 0)
+            if last_rotated and rotation_days:
+                days_since = (datetime.now(timezone.utc) - last_rotated.replace(tzinfo=timezone.utc)).days
+                if days_since > rotation_days + 7:
+                    finding("HIGH", "SecretsManager", f"secret/{name}",
+                            f"Rotation is overdue — last rotated {days_since} days ago (policy: every {rotation_days} days)",
+                            "Check if the rotation Lambda is functioning; trigger a manual rotation")
+        # Default AWS managed key
+        kms = secret.get("KmsKeyId", "")
+        if not kms or "aws/secretsmanager" in kms:
+            finding("LOW", "SecretsManager", f"secret/{name}",
+                    "Secret uses the default AWS managed KMS key — no customer control over key lifecycle",
+                    "Use a customer-managed KMS key for full control over encryption and key rotation")
+        # Not accessed in 90+ days
+        last_accessed = secret.get("LastAccessedDate")
+        if last_accessed:
+            days_idle = (datetime.now(timezone.utc) - last_accessed.replace(tzinfo=timezone.utc)).days
+            if days_idle > 90:
+                finding("LOW", "SecretsManager", f"secret/{name}",
+                        f"Secret not accessed in {days_idle} days — may be stale or unused",
+                        "Review whether this secret is still needed; delete unused secrets")
+    print(f"{Fore.GREEN}Secrets Manager audit complete. {len(secrets)} secret(s) checked.{Style.RESET_ALL}")
+
+
 # ── Report ───────────────────────────────────────────────────────────────────
 
 def print_summary(output_file=None):
@@ -941,7 +1259,8 @@ def main():
     parser.add_argument("--output",   default=None, help="Save text report to file (e.g. report.txt)")
     parser.add_argument("--html",     default=None, help="Save HTML report to file (e.g. report.html)")
     parser.add_argument("--services", default="all",
-                        help="Comma-separated services: iam,ec2,s3,rds,elasticache,athena,escalation (default: all)")
+                        help="Comma-separated: iam,ec2,sgmap,s3,rds,elasticache,athena,escalation,"
+                             "mq,route53,vpc,cloudfront,acm,secretsmanager (default: all)")
     args = parser.parse_args()
 
     profile = "security-scanner"
@@ -954,18 +1273,29 @@ def main():
 
     session = boto3.Session(profile_name=profile, region_name=region)
 
+    all_services = [
+        "iam", "escalation", "ec2", "sgmap", "vpc",
+        "s3", "rds", "elasticache", "athena",
+        "mq", "route53", "cloudfront", "acm", "secretsmanager",
+    ]
     services = [s.strip().lower() for s in args.services.split(",")] if args.services != "all" \
-        else ["iam", "ec2", "sgmap", "s3", "rds", "elasticache", "athena", "escalation"]
+        else all_services
 
     try:
-        if "iam"          in services: audit_iam(session)
-        if "escalation"   in services: audit_iam_escalation(session)
-        if "ec2"          in services: audit_ec2(session, region)
-        if "sgmap"        in services: audit_sg_map(session, region)
-        if "s3"           in services: audit_s3(session)
-        if "rds"          in services: audit_rds(session, region)
-        if "elasticache"  in services: audit_elasticache(session, region)
-        if "athena"       in services: audit_athena(session, region)
+        if "iam"            in services: audit_iam(session)
+        if "escalation"     in services: audit_iam_escalation(session)
+        if "ec2"            in services: audit_ec2(session, region)
+        if "sgmap"          in services: audit_sg_map(session, region)
+        if "vpc"            in services: audit_vpc(session, region)
+        if "s3"             in services: audit_s3(session)
+        if "rds"            in services: audit_rds(session, region)
+        if "elasticache"    in services: audit_elasticache(session, region)
+        if "athena"         in services: audit_athena(session, region)
+        if "mq"             in services: audit_mq(session, region)
+        if "route53"        in services: audit_route53(session)
+        if "cloudfront"     in services: audit_cloudfront(session)
+        if "acm"            in services: audit_acm(session, region)
+        if "secretsmanager" in services: audit_secrets_manager(session, region)
     except Exception as e:
         print(f"{Fore.RED}Error during audit: {e}{Style.RESET_ALL}")
         sys.exit(1)

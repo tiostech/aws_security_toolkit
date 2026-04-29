@@ -389,6 +389,161 @@ def save_reports(output_dir, instance, raw_report, parsed):
     return raw_path, json_path, csv_path
 
 
+# ── HTML Report ──────────────────────────────────────────────────────────────
+
+def generate_html_report(all_results, output_path):
+    scan_time = datetime.now().isoformat()
+
+    def score_color(score):
+        try:
+            s = int(score)
+            if s >= 80: return "#27ae60"
+            if s >= 65: return "#f39c12"
+            return "#e74c3c"
+        except Exception:
+            return "#888"
+
+    def score_bar(score):
+        try:
+            pct = min(int(score), 100)
+        except Exception:
+            pct = 0
+        color = score_color(score)
+        return (f'<div style="background:#2a2d3a;border-radius:4px;height:8px;width:100px;display:inline-block;vertical-align:middle">'
+                f'<div style="background:{color};width:{pct}%;height:8px;border-radius:4px"></div></div>'
+                f'&nbsp;<strong style="color:{color}">{score}/100</strong>')
+
+    # Summary table rows
+    summary_rows = ""
+    for r in all_results:
+        inst   = r["instance"]
+        parsed = r["parsed"]
+        score  = parsed.get("hardening_index", "?")
+        warns  = len(parsed["warnings"])
+        suggs  = len(parsed["suggestions"])
+        summary_rows += (f"<tr>"
+                         f"<td>{inst['id']}</td>"
+                         f"<td>{inst['name']}</td>"
+                         f"<td>{inst['ip']}</td>"
+                         f"<td>{score_bar(score)}</td>"
+                         f"<td style='color:#e74c3c;font-weight:bold'>{warns}</td>"
+                         f"<td style='color:#f39c12'>{suggs}</td>"
+                         f"<td>{parsed.get('os','?')}</td>"
+                         f"</tr>")
+
+    # Findings rows
+    finding_rows = ""
+    for r in all_results:
+        inst   = r["instance"]
+        parsed = r["parsed"]
+        iid    = inst["id"]
+        iip    = inst["ip"]
+        score  = parsed.get("hardening_index", "?")
+
+        for w in parsed["warnings"]:
+            finding_rows += (f"<tr data-instance='{iid}' data-type='WARNING'>"
+                             f"<td>{iid}</td><td>{iip}</td>"
+                             f"<td><span style='background:#e74c3c;color:#fff;padding:2px 8px;border-radius:4px;font-size:0.8em'>WARNING</span></td>"
+                             f"<td>{w['id']}</td><td>{w['desc']}</td><td>{w.get('fix','-')}</td>"
+                             f"</tr>")
+        for s in parsed["suggestions"]:
+            finding_rows += (f"<tr data-instance='{iid}' data-type='SUGGESTION'>"
+                             f"<td>{iid}</td><td>{iip}</td>"
+                             f"<td><span style='background:#f39c12;color:#fff;padding:2px 8px;border-radius:4px;font-size:0.8em'>SUGGESTION</span></td>"
+                             f"<td>{s['id']}</td><td>{s['desc']}</td><td>{s.get('fix','-')}</td>"
+                             f"</tr>")
+
+    scores = [int(r["parsed"]["hardening_index"])
+              for r in all_results
+              if str(r["parsed"].get("hardening_index","")).isdigit()]
+    avg_score = sum(scores) // len(scores) if scores else 0
+
+    instance_options = "".join(
+        f'<option value="{r["instance"]["id"]}">{r["instance"]["id"]} ({r["instance"]["ip"]})</option>'
+        for r in all_results
+    )
+
+    html = f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Lynis Security Report — tioscapital</title>
+<style>
+  body{{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;margin:0;background:#0f1117;color:#e0e0e0}}
+  .header{{background:#1a1d27;padding:24px 32px;border-bottom:1px solid #2a2d3a}}
+  .header h1{{margin:0;font-size:1.4em;color:#fff}}
+  .meta{{display:flex;gap:16px;margin-top:12px;flex-wrap:wrap}}
+  .meta-item{{background:#0f1117;border:1px solid #2a2d3a;border-radius:6px;padding:8px 16px}}
+  .meta-item span{{display:block;font-size:0.75em;color:#888;margin-bottom:2px}}
+  .meta-item strong{{color:#fff}}
+  h2{{color:#aaa;font-size:0.9em;text-transform:uppercase;letter-spacing:.08em;padding:20px 32px 8px;margin:0;border-top:1px solid #2a2d3a}}
+  .controls{{padding:12px 32px;background:#13151f;border-bottom:1px solid #2a2d3a;display:flex;gap:12px;flex-wrap:wrap}}
+  input,select{{background:#1a1d27;border:1px solid #2a2d3a;color:#e0e0e0;padding:8px 12px;border-radius:6px;font-size:0.9em}}
+  input{{width:260px}} input:focus,select:focus{{outline:none;border-color:#4a90d9}}
+  table{{width:100%;border-collapse:collapse;font-size:0.87em}}
+  th{{background:#1a1d27;color:#888;text-align:left;padding:10px 16px;font-weight:600;font-size:0.78em;text-transform:uppercase;letter-spacing:.05em;position:sticky;top:0}}
+  td{{padding:9px 16px;border-bottom:1px solid #1a1d27;vertical-align:top}}
+  tr:hover td{{background:#1a1d27}}
+  ::-webkit-scrollbar{{width:6px}} ::-webkit-scrollbar-track{{background:#0f1117}} ::-webkit-scrollbar-thumb{{background:#2a2d3a;border-radius:3px}}
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>Lynis Security Audit — tioscapital</h1>
+  <div class="meta">
+    <div class="meta-item"><span>Instances Scanned</span><strong>{len(all_results)}</strong></div>
+    <div class="meta-item"><span>Average Hardening Score</span><strong style="color:{score_color(avg_score)}">{avg_score}/100</strong></div>
+    <div class="meta-item"><span>Scan Time</span><strong>{scan_time}</strong></div>
+  </div>
+</div>
+
+<h2>Instance Summary</h2>
+<table>
+  <thead><tr><th>Instance ID</th><th>Name</th><th>IP</th><th>Hardening Score</th><th>Warnings</th><th>Suggestions</th><th>OS</th></tr></thead>
+  <tbody>{summary_rows}</tbody>
+</table>
+
+<h2>All Findings</h2>
+<div class="controls">
+  <input type="text" id="search" placeholder="Search findings..." oninput="filterFindings()">
+  <select id="instanceFilter" onchange="filterFindings()">
+    <option value="">All instances</option>{instance_options}
+  </select>
+  <select id="typeFilter" onchange="filterFindings()">
+    <option value="">All types</option>
+    <option value="WARNING">Warnings only</option>
+    <option value="SUGGESTION">Suggestions only</option>
+  </select>
+</div>
+<table id="findingsTable">
+  <thead><tr><th>Instance</th><th>IP</th><th>Type</th><th>Check ID</th><th>Finding</th><th>Fix</th></tr></thead>
+  <tbody>{finding_rows}</tbody>
+</table>
+
+<script>
+function filterFindings(){{
+  const search = document.getElementById('search').value.toLowerCase();
+  const inst   = document.getElementById('instanceFilter').value;
+  const type   = document.getElementById('typeFilter').value;
+  document.querySelectorAll('#findingsTable tbody tr').forEach(row => {{
+    const text    = row.textContent.toLowerCase();
+    const rowInst = row.dataset.instance || '';
+    const rowType = row.dataset.type || '';
+    row.style.display =
+      (!search || text.includes(search)) &&
+      (!inst   || rowInst === inst) &&
+      (!type   || rowType === type) ? '' : 'none';
+  }});
+}}
+</script>
+</body>
+</html>"""
+
+    with open(output_path, "w") as fh:
+        fh.write(html)
+    print(f"\n  {Fore.GREEN}HTML report : {output_path}{Style.RESET_ALL}")
+
+
 # ── Combined summary ──────────────────────────────────────────────────────────
 
 def print_combined_summary(all_results):
@@ -434,8 +589,12 @@ def main():
                     "Connects to EC2 instances via SSH, runs Lynis, pulls results.",
         formatter_class=argparse.RawDescriptionHelpFormatter
     )
-    parser.add_argument("--output", default="./lynis_reports", help="Directory to save reports (default: ./lynis_reports)")
+    parser.add_argument("--output", default="./lynis_reports",
+                        help="Directory to save reports (default: ./lynis_reports)")
+    parser.add_argument("--format", default="html,csv,json",
+                        help="Comma-separated report formats: html,csv,json (default: all three)")
     args = parser.parse_args()
+    formats = [f.strip().lower() for f in args.format.split(",")]
 
     # Hardcoded for tioscapital infrastructure
     profile        = "security-scanner"
@@ -550,34 +709,44 @@ def main():
 
     ts = datetime.now().strftime("%Y%m%d_%H%M%S")
     os.makedirs(args.output, exist_ok=True)
+    saved = []
 
-    # Combined JSON
-    combined_json = os.path.join(args.output, f"combined_{ts}.json")
-    with open(combined_json, "w") as f:
-        json.dump(all_results, f, indent=2, default=str)
+    if "json" in formats:
+        combined_json = os.path.join(args.output, f"combined_{ts}.json")
+        with open(combined_json, "w") as f:
+            json.dump(all_results, f, indent=2, default=str)
+        saved.append(("JSON ", combined_json))
 
-    # Combined CSV — all instances and all findings in one file
-    combined_csv = os.path.join(args.output, f"combined_{ts}.csv")
-    with open(combined_csv, "w", newline="") as f:
-        writer = csv.writer(f)
-        writer.writerow(["Instance ID", "Instance Name", "IP", "Hardening Score",
-                         "OS", "Kernel", "Lynis Version",
-                         "Type", "ID", "Description", "Fix"])
-        for r in all_results:
-            inst   = r["instance"]
-            parsed = r["parsed"]
-            score  = parsed.get("hardening_index", "")
-            for w in parsed["warnings"]:
-                writer.writerow([inst["id"], inst["name"], inst["ip"], score,
-                                 parsed.get("os",""), parsed.get("kernel",""), parsed.get("lynis_version",""),
-                                 "WARNING", w["id"], w["desc"], w["fix"]])
-            for s in parsed["suggestions"]:
-                writer.writerow([inst["id"], inst["name"], inst["ip"], score,
-                                 parsed.get("os",""), parsed.get("kernel",""), parsed.get("lynis_version",""),
-                                 "SUGGESTION", s["id"], s["desc"], s["fix"]])
+    if "csv" in formats:
+        combined_csv = os.path.join(args.output, f"combined_{ts}.csv")
+        with open(combined_csv, "w", newline="") as f:
+            writer = csv.writer(f)
+            writer.writerow(["Instance ID", "Instance Name", "IP", "Hardening Score",
+                             "OS", "Kernel", "Lynis Version",
+                             "Type", "ID", "Description", "Fix"])
+            for r in all_results:
+                inst   = r["instance"]
+                parsed = r["parsed"]
+                score  = parsed.get("hardening_index", "")
+                for w in parsed["warnings"]:
+                    writer.writerow([inst["id"], inst["name"], inst["ip"], score,
+                                     parsed.get("os",""), parsed.get("kernel",""), parsed.get("lynis_version",""),
+                                     "WARNING", w["id"], w["desc"], w["fix"]])
+                for s in parsed["suggestions"]:
+                    writer.writerow([inst["id"], inst["name"], inst["ip"], score,
+                                     parsed.get("os",""), parsed.get("kernel",""), parsed.get("lynis_version",""),
+                                     "SUGGESTION", s["id"], s["desc"], s["fix"]])
+        saved.append(("CSV  ", combined_csv))
 
-    print(f"\n  {Fore.GREEN}Combined CSV  : {combined_csv}{Style.RESET_ALL}")
-    print(f"  {Fore.GREEN}Combined JSON : {combined_json}{Style.RESET_ALL}\n")
+    if "html" in formats:
+        combined_html = os.path.join(args.output, f"combined_{ts}.html")
+        generate_html_report(all_results, combined_html)
+        saved.append(("HTML ", combined_html))
+
+    print()
+    for label, path in saved:
+        print(f"  {Fore.GREEN}{label}: {path}{Style.RESET_ALL}")
+    print()
 
 
 if __name__ == "__main__":

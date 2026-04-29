@@ -24,6 +24,30 @@ aws_security_toolkit/
 - `server_scan.py`: Port scan, banner grab, SSH/HTTP/FTP/SSL checks, exposed service detection
 - `requirements.txt`: boto3, requests, colorama, paramiko
 
+### 2026-04-28 — v0.2.0 aws_audit.py Six New Service Checks
+- Added `audit_mq()` — public broker exposure, auto minor upgrade disabled, audit/general logging disabled
+- Added `audit_route53()` — DNSSEC not enabled on public zones, query logging disabled, wildcard records
+- Added `audit_vpc()` — default VPC exists, flow logs disabled, subnets auto-assigning public IPs, default SG has rules, NACLs with allow-all
+- Added `audit_cloudfront()` — HTTP not redirected to HTTPS, weak min TLS version, no WAF, logging disabled, origin using HTTP
+- Added `audit_acm()` — expired/failed/pending certs, expiring < 30 days, issued but not in use
+- Added `audit_secrets_manager()` — rotation not enabled, rotation overdue, default KMS key, not accessed in 90+ days
+- `main()`: all 6 wired into default services list; IAM MFA check now skips CLI users (no login profile)
+- New IAM permissions needed: `mq:ListBrokers`, `mq:DescribeBroker`, `route53:ListHostedZones`, `route53:GetDNSSEC`, `route53:ListQueryLoggingConfigs`, `route53:ListResourceRecordSets`, `ec2:DescribeVpcs`, `ec2:DescribeSubnets`, `ec2:DescribeFlowLogs`, `ec2:DescribeNetworkAcls`, `cloudfront:ListDistributions`, `acm:ListCertificates`, `acm:DescribeCertificate`, `secretsmanager:ListSecrets`, `secretsmanager:DescribeSecret`, `iam:GetLoginProfile`
+
+### 2026-04-28 — v0.3.0 server_scan.py Full Pentest Rebuild
+- Rebuilt `server_scan.py` from a port scanner into a full penetration testing simulator
+- Added CVE database — 25+ entries across OpenSSH, Apache, nginx, vsftpd, ProFTPD, Exim, PHP, OpenSSL, IIS; matches detected service versions to known CVEs
+- Added Heartbleed check (CVE-2014-0160) — raw TLS heartbeat probe; detects memory leak without crashing server
+- Added SSL/TLS deep audit — weak protocol version acceptance (TLS 1.0/1.1), weak cipher negotiation, certificate expiry
+- Added SSH deep audit — password/keyboard-interactive auth probe (auth_none), SSHv1 detection, weak algorithm flags
+- Added web vulnerability scanner — sensitive path discovery (60+ paths: .env, .git, admin panels, backups, debug endpoints), CORS misconfiguration, HTTP method testing (PUT/DELETE/TRACE), SQL injection probes, security header analysis, insecure cookie detection, HTTP→HTTPS redirect check, default credential testing on admin panels
+- Added SNMP community string enumeration — raw UDP probe for public/private/community/manager strings
+- Added FTP default credential testing — anonymous, ftp, admin, root
+- Enhanced Redis check — detects unauthenticated CONFIG command access (RCE vector)
+- Enhanced Elasticsearch check — lists visible index names when unauthenticated
+- JSON report output (`--output report.json`) replaces plaintext
+- 8-phase scan flow: port scan → banner+CVE → SSH → SSL → web → FTP → services → SNMP
+
 ### 2026-04-28 — v0.1.5 HTML Report, IAM Escalation Checker, S3 Fixes
 - `aws_audit.py`: Added `audit_iam_escalation()` — checks all IAM users and roles for 13 single-permission escalation paths and 5 combination escalation paths; reports CRITICAL/HIGH per principal
 - `aws_audit.py`: Added `generate_html_report()` — self-contained HTML with severity colour coding, search box, severity/service filter dropdowns; triggered via `--html report.html`
@@ -58,6 +82,38 @@ aws_security_toolkit/
 - `lynis_scan.py`: Always installs latest Lynis from source (v3.1.4) instead of relying on apt package (which ships v2.6.2)
 - Checks installed version first — skips reinstall if already on latest, upgrades if outdated
 - `LYNIS_VERSION` constant at top of file — update it when new Lynis releases come out
+
+### 2026-04-29 — v0.6.0 Removed OpenVAS
+- Deleted `openvas_scan.py` and `config/openvas.txt` — GVM data feeds were not synced on the server (no port lists, no scan configs), and the python-gvm API has breaking changes between versions that made the integration unreliable
+- Removed `python-gvm` from `requirements.txt`
+- README updated: Script 4 section removed, folder structure and quick reference cleaned up
+- Toolkit is now 3 scripts: `aws_audit.py`, `server_scan.py`, `lynis_scan.py`
+
+### 2026-04-28 — v0.5.1 OpenVAS SSH Tunnel Connection
+- Replaced `TLSConnection` with a custom `_GmpSSHConnection` class — gvmd only listens on Unix socket by default, not TCP 9390; SSH tunnel via `nc -U` is the correct remote access method
+- `connect_gmp()` signature changed: takes `ssh_user`, `ssh_key`, `socket_path` instead of `port`
+- `config/openvas.txt` extended: `ssh_user`, `ssh_key`, `socket` fields added; `port` removed
+- Requirement: ubuntu user must be in `_gvm` group on server (`sudo usermod -aG _gvm ubuntu`)
+- README updated with one-time server setup instructions and new config format
+
+### 2026-04-28 — v0.5.0 Replaced Nessus with OpenVAS
+- Removed `nessus_scan.py` and `config/nessus.txt` — Nessus Essentials license blocks all REST API write operations (POST /scans, POST /scans/{id}/launch) returning 412 regardless of auth method; no workaround exists
+- Created `openvas_scan.py`: connects via GMP (Greenbone Management Protocol) on port 9390, full write access, free/open source, 100k+ NVTs with real CVE IDs
+- Added `config/openvas.txt` for credentials (host, port, user, password)
+- Added `python-gvm` to `requirements.txt`
+- README updated: Script 4 is now openvas_scan.py; nessus removed from file table, folder structure, and quick reference
+- OpenVAS install on Ubuntu: `sudo apt install openvas && sudo gvm-setup && sudo gvm-start`
+
+### 2026-04-28 — v0.4.0 Nessus Scanner
+- Created `nessus_scan.py`: connects to a running Nessus instance via REST API, creates and launches a scan, polls until complete, extracts findings with CVE IDs, generates HTML/CSV/JSON reports
+- Default Nessus URL: `https://nessus.tioscapital.com`
+- Auth via `--username`/`--password` or `NESSUS_USER`/`NESSUS_PASS` env vars
+- Auto-selects "Basic Network Scan" template (falls back to first available)
+- Severity mapping: Nessus 0–4 integers → INFO/LOW/MEDIUM/HIGH/CRITICAL
+- Extracts CVE IDs from plugin attributes and ref_information
+- `--keep` flag to preserve scan in Nessus history after pulling results (default: delete)
+- No new dependencies — uses `requests` already in requirements.txt
+- CLI args: `--target`, `--url`, `--username`, `--password`, `--output`, `--format`, `--timeout`, `--keep`
 
 ### 2026-04-27 — v0.2.0 Lynis Remote Scanner
 - Created `lynis_scan.py`: discovers EC2 instances via boto3, SSHs in with paramiko, installs Lynis, runs full audit, pulls report, generates combined summary

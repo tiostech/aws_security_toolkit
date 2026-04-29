@@ -1,2 +1,4 @@
 venv/
 lynis_reports/*
+config/*
+report.html
