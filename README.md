@@ -11,6 +11,7 @@ A read-only security auditing and penetration testing toolkit for AWS infrastruc
 | `aws_audit.py` | Audits your entire AWS account across 14 services — IAM, EC2, S3, RDS, ElastiCache, Athena, MQ, Route53, VPC, CloudFront, ACM, Secrets Manager, security group map, and IAM privilege escalation |
 | `server_scan.py` | Full penetration test simulation against a server — CVE matching, SSH audit, SSL/TLS deep audit including Heartbleed, web vulnerability scanning, SNMP enumeration, default credentials, service checks |
 | `lynis_scan.py` | SSHs into EC2 instances, installs Lynis, runs a 500+ test deep OS security audit, and saves reports |
+| `scan_mcp.sh` | Scans MCP server repos for security threats before installing — YARA patterns, AI behavioral analysis, readiness checks, and optional VirusTotal/Cisco analyzers |
 | `requirements.txt` | Python dependencies |
 
 ---
@@ -396,6 +397,60 @@ Generated automatically every run. Opens in any browser:
 
 ---
 
+## Script 4 — scan_mcp.sh (MCP Server Security Scanner)
+
+Scans MCP (Model Context Protocol) servers for security threats before you install or use them. Accepts a GitHub URL or local path and runs multiple static and AI-powered analyzers against the source code.
+
+### What it does
+
+1. Clones `cisco-ai-defense/mcp-scanner` into `~/dev/` if not already present
+2. Asks for your Anthropic API key (used for behavioral analysis)
+3. Asks for the repo to scan — GitHub URL or local path
+4. Clones the target repo to `/tmp/mcp-scan-target` if a URL is given
+5. Runs all available analyzers and prints a summary
+
+### Analyzers
+
+| Analyzer | What it detects | Key required |
+|---|---|---|
+| `yara` | Known malicious patterns in source code (hardcoded exfiltration, hidden instructions) | None |
+| `behavioral` | Tool descriptions that lie — claims one thing, code does another | Anthropic API key |
+| `readiness` | Missing timeouts, no retry logic, poor error handling | None |
+| `virustotal` | Malware in bundled binary files | `VIRUSTOTAL_API_KEY` (free at virustotal.com) |
+| `api` (Cisco) | Cisco AI Defense cloud analysis | `MCP_SCANNER_API_KEY` (Cisco enterprise) |
+
+### How to run
+
+```bash
+cd ~/dev/aws_security_toolkit
+./scan_mcp.sh
+```
+
+The script will ask:
+1. Your Anthropic API key (`sk-ant-...`) — get one at console.anthropic.com
+2. GitHub URL or local path of the MCP server to scan
+
+**Example inputs:**
+```
+https://github.com/benborla/mcp-server-mysql
+https://github.com/isaacwasserman/mcp-snowflake-server
+/path/to/local/mcp-server/src
+```
+
+### Optional: enable more analyzers
+
+```bash
+# Add VirusTotal (free API key — scans bundled binary files)
+export VIRUSTOTAL_API_KEY="your_key"
+
+# Add Cisco AI Defense (enterprise)
+export MCP_SCANNER_API_KEY="your_key"
+
+./scan_mcp.sh
+```
+
+---
+
 ## Folder Structure
 
 ```
@@ -406,6 +461,7 @@ aws_security_toolkit/
 ├── aws_audit.py         ← AWS cloud security auditor (14 services)
 ├── server_scan.py       ← Server penetration test scanner
 ├── lynis_scan.py        ← Deep OS audit via SSH + Lynis
+├── scan_mcp.sh          ← MCP server security scanner
 └── lynis_reports/       ← Created automatically when lynis_scan.py runs
 ```
 
@@ -428,4 +484,7 @@ python server_scan.py --target <ip> --output scan
 
 # Deep OS audit (connect Tailscale first for private subnets)
 python lynis_scan.py
+
+# Scan an MCP server before installing it
+./scan_mcp.sh
 ```
